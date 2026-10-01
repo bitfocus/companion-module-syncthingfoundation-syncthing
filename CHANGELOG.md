@@ -17,6 +17,25 @@ been tested against real Syncthing instances.
 
 Nothing yet.
 
+## [0.1.10] - 2026-10-01
+
+### Changed
+
+- The module moved to its official home, bitfocus/companion-module-syncthingfoundation-syncthing,
+  and its id changed from syncthing to syncthingfoundation-syncthing to match. The Bitfocus
+  module check derives the expected id from the repository name and fails on any other. The
+  full history and every release tag came along.
+- Connections created with an earlier version are tied to the old id and have to be added again.
+  No version before this one was published, so that only affects test installations.
+
+### Fixed
+
+- Presets now address variables through the connection's own label instead of a fixed
+  `syncthing` prefix. Renaming a connection used to leave every preset button pointing at
+  variables that no longer resolved, and the new module id would have broken them outright.
+  Presets are rebuilt whenever the connection is updated, which is when Companion applies a new
+  label.
+
 ### Confirmed against real instances
 
 Setting up a connection was tested on 2026-09-21 against Syncthing on Windows and a second

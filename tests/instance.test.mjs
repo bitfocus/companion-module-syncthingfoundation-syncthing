@@ -32,6 +32,7 @@ function makeContext() {
 		savedConfig: undefined,
 		savedSecrets: undefined,
 		saveCount: 0,
+		presets: {},
 	}
 
 	const context = {
@@ -55,7 +56,9 @@ function makeContext() {
 		checkFeedbacks: () => {},
 		checkAllFeedbacks: () => {},
 		checkFeedbacksById: () => {},
-		setPresetDefinitions: () => {},
+		setPresetDefinitions: (structure, presets) => {
+			record.presets = presets
+		},
 		setVariableDefinitions: () => {},
 		setVariableValues: (values) => Object.assign(record.variables, values),
 		getVariableValue: (id) => record.variables[id],
@@ -326,7 +329,37 @@ console.log('5. picking a found instance fills in the host')
 	syncthing.server.close()
 }
 
-console.log('6. an unreachable instance reports a connection failure')
+console.log('6. presets address variables through the connection label')
+{
+	const syncthing = await startSyncthing({ requireKey: true })
+	const { context, record } = makeContext()
+	const instance = new ModuleInstance(context)
+
+	await instance.init(baseConfig(syncthing.port), true, { apiKey: 'the-real-key' })
+	await waitFor(() => Object.keys(record.presets).some((id) => id.startsWith('folder_')), 'folder presets')
+
+	const texts = () =>
+		Object.values(record.presets)
+			.map((p) => p.style?.text ?? '')
+			.join(' | ')
+	check('the label is used', texts().includes('$(Syncthing test:version)'), texts().slice(0, 200))
+	check('folder presets use it too', texts().includes('$(Syncthing test:folder_show_completion)'))
+	check(
+		'no reference names the module id',
+		!texts().includes('$(syncthing:') && !texts().includes('$(syncthingfoundation-syncthing:'),
+	)
+
+	// Companion sets a renamed label just before calling configUpdated.
+	context.label = 'Media sync'
+	await instance.configUpdated(baseConfig(syncthing.port), { apiKey: 'the-real-key' })
+	check('a renamed connection gets new references', texts().includes('$(Media sync:version)'), texts().slice(0, 200))
+	check('the old label is gone', !texts().includes('$(Syncthing test:'))
+
+	await instance.destroy()
+	syncthing.server.close()
+}
+
+console.log('7. an unreachable instance reports a connection failure')
 {
 	const { context, record } = makeContext()
 	const instance = new ModuleInstance(context)

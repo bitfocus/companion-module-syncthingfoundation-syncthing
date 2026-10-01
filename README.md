@@ -1,4 +1,4 @@
-# companion-module-syncthing
+# companion-module-syncthingfoundation-syncthing
 
 A [Bitfocus Companion](https://bitfocus.io/companion) module for [Syncthing](https://syncthing.net/).
 
@@ -32,7 +32,8 @@ Build once with `yarn build`. That is enough for Companion to load the module.
 While developing, `yarn dev` runs the compiler in watch mode and recompiles on change.
 
 Check types and style with `yarn build` and `yarn lint`. Run `yarn test` after a build to
-exercise the REST client and the state helpers against a simulated Syncthing server. Build a distributable package with
+exercise the module against a simulated Syncthing server, from the REST client up to a full
+module instance driven the way Companion drives it. Build a distributable package with
 `yarn package`.
 
 ## Project layout
@@ -46,11 +47,14 @@ exercise the REST client and the state helpers against a simulated Syncthing ser
 | `src/config.ts`    | Connection settings shown in the Companion web UI                   |
 | `src/discover.ts`  | Reads the API key from an instance whose web interface has no login |
 | `src/events.ts`    | Long-polling event stream, with reconnect and restart detection     |
+| `src/lanscan.ts`   | Finds instances on the network and checks whether they answer       |
+| `src/netbios.ts`   | Asks a machine its own name when reverse DNS has none               |
 | `src/actions.ts`   | Actions                                                             |
 | `src/feedbacks.ts` | Feedbacks                                                           |
 | `src/variables.ts` | Variable definitions and the uptime formatter                       |
 | `src/presets.ts`   | Ready-made buttons                                                  |
 | `tests/`           | Dependency-free checks, run with `yarn test` after `yarn build`     |
+| `scripts/`         | Diagnostics, for example `node scripts/discover-check.mjs`          |
 
 ## Roadmap
 

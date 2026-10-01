@@ -11,6 +11,10 @@ const AMBER = combineRgb(200, 120, 0)
 const BLUE = combineRgb(0, 80, 160)
 
 export function UpdatePresets(self: ModuleInstance): void {
+	// Variables are addressed by the connection's label, which the user can change at any time.
+	// Building the reference from it keeps presets working after a rename, and independent of
+	// the module id.
+	const v = (name: string): string => `$(${self.label}:${name})`
 	const presets: CompanionPresetDefinitions<ModuleSchema> = {
 		overview_all_in_sync: {
 			type: 'simple',
@@ -37,7 +41,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			type: 'simple',
 			name: 'This machine is up to date',
 			style: {
-				text: 'This PC\n$(syncthing:completion)%',
+				text: `This PC\n${v('completion')}%`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: RED,
@@ -51,7 +55,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			type: 'simple',
 			name: 'Connection status',
 			style: {
-				text: 'Syncthing\n$(syncthing:version)',
+				text: `Syncthing\n${v('version')}`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: GREY,
@@ -65,7 +69,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			type: 'simple',
 			name: 'Error count',
 			style: {
-				text: 'Errors\n$(syncthing:error_count)',
+				text: `Errors\n${v('error_count')}`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: GREY,
@@ -79,7 +83,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			type: 'simple',
 			name: 'Connected devices',
 			style: {
-				text: 'Devices\n$(syncthing:devices_connected)/$(syncthing:devices_total)',
+				text: `Devices\n${v('devices_connected')}/${v('devices_total')}`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: GREY,
@@ -93,7 +97,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			type: 'simple',
 			name: 'Transfer running',
 			style: {
-				text: 'Syncing\n$(syncthing:folders_syncing)',
+				text: `Syncing\n${v('folders_syncing')}`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: GREY,
@@ -162,7 +166,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			name: `Folder ${folder.label || folder.id}`,
 			keywords: ['folder', folder.id],
 			style: {
-				text: `${folder.label || folder.id}\n$(syncthing:folder_${folder.varPrefix}_completion)%`,
+				text: `${folder.label || folder.id}\n${v(`folder_${folder.varPrefix}_completion`)}%`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: RED,
@@ -266,7 +270,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 			name: `Device ${device.name}`,
 			keywords: ['device', device.name],
 			style: {
-				text: `${device.name}\n$(syncthing:device_${device.varPrefix}_completion)%`,
+				text: `${device.name}\n${v(`device_${device.varPrefix}_completion`)}%`,
 				size: 'auto',
 				color: WHITE,
 				bgcolor: GREY,

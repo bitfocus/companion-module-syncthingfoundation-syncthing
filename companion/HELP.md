@@ -154,6 +154,9 @@ without reloading the connection.
 Every folder and device variable exists twice, so you can pick between a stable name and a
 readable one.
 
+In the examples below, `syncthing` stands for the name of your connection. Variables are always
+addressed by that name, so use whatever you called the connection in Companion.
+
 **By identifier.** Folders use their folder id, devices the first block of their device ID. These
 never change, even when you rename things, which is what you want for an installation that has to
 keep working untouched. The drawback is that a Syncthing folder id is often generated and cryptic,

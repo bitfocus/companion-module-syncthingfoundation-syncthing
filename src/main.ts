@@ -154,6 +154,10 @@ export default class ModuleInstance extends InstanceBase<ModuleSchema> {
 			this.saveConfig(this.config, this.secrets)
 		}
 
+		// Companion sets a renamed label just before calling this, and the presets address
+		// variables through that label, so they have to be built again.
+		this.updatePresets()
+
 		this.#applyLanScan()
 		this.#applyConfig()
 	}
