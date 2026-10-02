@@ -21,16 +21,6 @@ See [HELP.md](./companion/HELP.md) for user documentation, [CHANGELOG.md](./CHAN
 changed when, and [LICENSE](./LICENSE) for the license. Report problems in the
 [issue tracker](https://github.com/bitfocus/companion-module-syncthingfoundation-syncthing/issues).
 
-## Status
-
-The module is in pre-release. Setting up a connection has been tested against real Syncthing
-instances on Windows and in a virtual machine, over HTTP and HTTPS. The control actions and the
-event stream under real transfer activity have only been checked against a simulated Syncthing so
-far.
-
-Everything below 1.0.0 is a pre-release, and each round of changes raises the patch number.
-Version 1.0.0 will be the first published release.
-
 ## Getting started
 
 The project uses Yarn 4 through Corepack. Enable Corepack once, so that `yarn` picks up the version
@@ -50,14 +40,11 @@ driven the way Companion drives it.
 
 ## Packaging and releases
 
-Build a pre-release package with the flag that marks it as one:
+Build a distributable package with:
 
 ```
-yarn package --prerelease
+yarn package
 ```
-
-Without the flag the build tool clears the pre-release marker in the manifest, whatever the file
-says.
 
 Releases are made from version tags, so only push a tag for a version that is meant to be
 published. The tag has to match the version in `package.json`, for example `v1.0.0` for version
@@ -83,19 +70,11 @@ published. The tag has to match the version in `package.json`, for example `v1.0
 | `tests/`           | Dependency-free checks, run with `yarn test` after `yarn build`     |
 | `scripts/`         | Diagnostics, for example `node scripts/discover-check.mjs`          |
 
-## Roadmap
+## Scope
 
-1. ~~Scaffold, connection, status and instance-wide variables~~ done
-2. ~~Per-folder and per-device variables, feedbacks and presets, driven by the live configuration~~ done
-3. ~~Per-folder and per-device actions: pause, resume, override, revert~~ done
-4. ~~Event stream via `/rest/events` long polling, replacing most of the polling~~ done
-5. ~~Network discovery and automatic API key reading for an easier setup~~ done
-6. Real-world testing of the control actions and of the event stream under transfer activity,
-   then the first published release, 1.0.0
-
-Deliberately out of scope: actions that add a folder or add a remote device. Those are setup steps
-that belong in the Syncthing web interface, where the device ID can be checked before confirming.
-They may be reconsidered if users ask for them.
+Adding folders and adding remote devices are deliberately not offered as actions. Those are setup
+steps that belong in the Syncthing web interface, where the device ID can be checked before
+confirming. They may be reconsidered if users ask for them.
 
 ## References
 

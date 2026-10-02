@@ -23,17 +23,25 @@ well as one on the local network. What it does not take is a whole web address: 
 front and no port behind, because the port has its own field.
 
 A new connection starts with no host chosen, and contacts nothing at all until you pick one. That
-includes the machine Companion runs on: 127.0.0.1 is offered in the list, but never chosen for
-you, because a connection to the local instance is rarely what you want on a network with several
-machines.
+includes the machine Companion runs on, because a connection to the local instance is rarely what
+you want on a network with several machines.
 
 The API key is stored as a secret, separately from the rest of the configuration.
+
+If Syncthing runs on a different machine than Companion, its web interface must listen on more
+than localhost, which is its default. Set the GUI listen address to `0.0.0.0:8384` in the
+Syncthing settings.
 
 ### Finding instances on the network
 
 Syncthing announces itself by broadcasting on UDP port 21027. The module listens there, on every
-network interface of the Companion machine, and offers what it hears in the host list. Nothing is
-sent out, so the scan is invisible on the network.
+network interface of the Companion machine, and offers what it hears in the list of instances
+found on the network. Nothing is sent out, so the scan is invisible on the network.
+
+The instance on the Companion machine itself is checked directly at 127.0.0.1, once a minute, and
+listed like any other when it answers there. Whether it does depends on how its web interface is
+bound: bound to a single network address, it does not answer at 127.0.0.1 and is listed under that
+address instead.
 
 The found instances sit in their own list above the host field. Picking one fills the host in and
 the list goes back to its placeholder, so it is an assist rather than a setting. The host field
@@ -69,10 +77,8 @@ Announcements arrive every 30 to 60 seconds, so the list can be empty for a whil
 the page. It fills itself: when an instance is found the page redraws, and the new entry appears
 without you doing anything. That redraw discards anything half typed into the page, so it only
 happens while no host has been set yet, only when the list actually grew, and at most once every
-ten seconds. And the instance on the Companion
-machine itself announces its network address, where its web interface is usually not bound, so it
-may not be listed. The host list offers 127.0.0.1 for that case, which is the usual setup on
-Windows and macOS, but it is never preselected.
+ten seconds. The variables `discovered_count` and `discovered_hosts` show the current state at any
+time, without opening the page.
 
 An instance that did not answer is checked again a few minutes later, so binding Syncthing to a
 network address after the fact is picked up without doing anything in Companion. Changing the port
@@ -86,8 +92,9 @@ to tell "heard nothing" apart from "heard it but it did not answer".
 ### Getting the API key without copying it
 
 Leave the API key empty and the module will try to read it from the instance itself, then store it
-as if you had typed it in. It is an attempt, not a promise. This only works while the Syncthing web interface has no username and
-password, which is its state after a fresh install on a trusted network. The module does exactly
+as if you had typed it in. It is an attempt, not a promise. This only works while the Syncthing
+web interface has no username and password, which is its state after a fresh install on a trusted
+network. The module does exactly
 what the web interface does in your browser: it asks for the page once to receive a CSRF token,
 then reads the configuration with that token.
 
@@ -99,15 +106,6 @@ Two caveats. This uses behaviour that is not part of the documented REST API, so
 Syncthing release could change it. And Syncthing rejects requests that arrive under an unexpected
 host name as a protection against DNS rebinding, so use an IP address if the lookup fails with a
 host check error. Untick the option if you would rather the module never tried.
-
-If Syncthing runs on a different machine than Companion, its GUI must listen on more than
-localhost. Set the GUI listen address to `0.0.0.0:8384` in the Syncthing settings.
-
-Per-folder and per-device numbers cost one request each, and Syncthing describes the folder status
-call as expensive on large folders. The module therefore chooses that rate itself rather than
-asking you: while the event stream is connected the numbers arrive in the events and this call is
-only a safety net, running at most every two minutes. Without events it is the only source and
-runs every thirty seconds.
 
 ### How the module stays up to date
 
@@ -122,10 +120,12 @@ Both the event stream and the search for instances run on their own. There is no
 on, and nothing to switch off: neither has a case where turning it off helps, and an option nobody
 knowingly changes is only one more thing to explain.
 
-**Polling** is the floor underneath it. A short poll refreshes uptime, byte totals and the error
-list. The expensive per-folder call is where the event stream earns its keep: while events are
-flowing, folder numbers arrive in the events themselves, and the poll drops back to a safety net
-that runs at most once every two minutes.
+**Polling** is the floor underneath it. A short poll every five seconds refreshes uptime, byte
+totals and the error list. Per-folder and per-device numbers cost one request each, and Syncthing
+describes the folder status call as expensive on large folders, so the module chooses that rate
+itself: while events are flowing the numbers arrive in the events and this call is only a safety
+net, running at most every two minutes. Without events it is the only source and runs every
+thirty seconds.
 
 If the stream breaks, the module says so in the log once, retries every few seconds, and keeps
 polling meanwhile, so buttons stay correct at the polling rate. If Syncthing restarts, its event
@@ -225,6 +225,9 @@ Identity: `my_id`, `my_id_short`, `device_name`, `gui_url`
 
 `gui_url` holds the address of the Syncthing web interface, for example to open it in a new tab
 from a button.
+
+Network search: `discovered_count`, `discovered_hosts`. These are set before a host has been
+chosen, so they can be put on a button while setting things up.
 
 Runtime: `uptime`, `uptime_seconds`, `bytes_in_total`, `bytes_out_total`
 
