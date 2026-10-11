@@ -12,7 +12,8 @@ const {
 	FOLDER_STATES,
 } = await import(`${D}/state.js`)
 const { folderChoices, deviceChoices, localInSync, clusterInSync } = await import(`${D}/feedbacks.js`)
-const { folderVariableValues, deviceVariableValues, folderVar, deviceVar } = await import(`${D}/variables.js`)
+const { folderVariableValues, deviceVariableValues, folderVar, deviceVar, FOLDER_SUFFIXES, DEVICE_SUFFIXES } =
+	await import(`${D}/variables.js`)
 
 let failures = 0
 const check = (name, cond, detail = '') => {
@@ -256,12 +257,38 @@ console.log('11. both naming variants are published')
 const twoWay = folderVariableValues(folder({ varPrefix: 'kj3h4_a9s8d', namePrefix: 'show_content' }))
 check('value present under the folder id', twoWay['folder_kj3h4_a9s8d_completion'] === 100)
 check('same value present under the label', twoWay['folder_show_content_completion'] === 100)
-check('alias doubles the variable count', Object.keys(twoWay).length === 28, String(Object.keys(twoWay).length))
+check('alias doubles the variable count', Object.keys(twoWay).length === 26, String(Object.keys(twoWay).length))
 const oneWay = folderVariableValues(folder({ namePrefix: '' }))
-check('no alias means one set only', Object.keys(oneWay).length === 14, String(Object.keys(oneWay).length))
+check('no alias means one set only', Object.keys(oneWay).length === 13, String(Object.keys(oneWay).length))
 const devTwoWay = deviceVariableValues(device())
 check('device value under the ID block', devTwoWay['device_DEV1_name'] === 'Backup PC')
 check('device value under the lowercase name', devTwoWay['device_backup_pc_name'] === 'Backup PC')
+
+console.log('12. no two variables can end up with the same name')
+for (const [kind, list] of [
+	['folder', FOLDER_SUFFIXES],
+	['device', DEVICE_SUFFIXES],
+]) {
+	const suffixes = list.map((entry) => entry.suffix)
+	const clashes = []
+	for (const a of suffixes) {
+		const parts = a.split('_')
+		for (let i = 1; i < parts.length; i++) {
+			const tail = parts.slice(i).join('_')
+			if (suffixes.includes(tail)) clashes.push(`${a} vs ${tail}`)
+		}
+	}
+	check(`no ${kind} suffix is the tail of another`, clashes.length === 0, clashes.join(', '))
+	check(`${kind} suffixes are unique`, new Set(suffixes).size === suffixes.length)
+}
+{
+	// The case that used to collide: one folder's "pull_errors" against another's "errors".
+	const a = folderVariableValues(folder({ id: 'x', varPrefix: 'x', pullErrors: 1 }))
+	const b = folderVariableValues(folder({ id: 'x_pull', varPrefix: 'x_pull', pullErrors: 9 }))
+	const shared = Object.keys(a).filter((key) => key in b)
+	check('folders x and x_pull share no variable', shared.length === 0, shared.join(', '))
+	check('x keeps its own failed file count', a['folder_x_pull_errors'] === 1, String(a['folder_x_pull_errors']))
+}
 
 console.log(failures === 0 ? '\nALL PASS' : `\n${failures} FAILURE(S)`)
 process.exit(failures === 0 ? 0 : 1)

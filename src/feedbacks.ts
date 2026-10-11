@@ -1,4 +1,4 @@
-import { combineRgb, type DropdownChoice } from '@companion-module/base'
+import { combineRgb, type CompanionInputFieldDropdown, type DropdownChoice } from '@companion-module/base'
 import type ModuleInstance from './main.js'
 import { FOLDER_STATES, findDevice, findFolder, type ModuleState } from './state.js'
 
@@ -48,6 +48,39 @@ export function deviceChoices(state: ModuleState): DropdownChoice[] {
 	}))
 }
 
+/**
+ * The folder field shared by actions and feedbacks, so both accept the same input.
+ *
+ * A custom value is allowed, so an id can be typed in or come from an expression. That also covers
+ * a folder the module has not seen yet, for which the list holds only its placeholder.
+ */
+export function folderOption(state: ModuleState): CompanionInputFieldDropdown<'folder'> {
+	const choices = folderChoices(state)
+	return {
+		id: 'folder',
+		type: 'dropdown',
+		label: 'Folder',
+		choices,
+		default: String(choices[0]?.id ?? ''),
+		allowCustom: true,
+		tooltip: 'The list follows the folders configured in Syncthing. An id can also be typed in.',
+	}
+}
+
+/** The device field shared by actions and feedbacks, so both accept the same input. */
+export function deviceOption(state: ModuleState): CompanionInputFieldDropdown<'device'> {
+	const choices = deviceChoices(state)
+	return {
+		id: 'device',
+		type: 'dropdown',
+		label: 'Device',
+		choices,
+		default: String(choices[0]?.id ?? ''),
+		allowCustom: true,
+		tooltip: 'The list follows the devices configured in Syncthing. A device ID can also be typed in.',
+	}
+}
+
 const stateChoices: DropdownChoice[] = FOLDER_STATES.map((state) => ({ id: state, label: state }))
 
 /** True when this machine holds everything the cluster has. */
@@ -70,10 +103,8 @@ function clusterInSync(state: ModuleState, ignoreDisconnected: boolean): boolean
 }
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
-	const folders = folderChoices(self.state)
-	const devices = deviceChoices(self.state)
-	const firstFolder = String(folders[0]?.id ?? '')
-	const firstDevice = String(devices[0]?.id ?? '')
+	const folderField = folderOption(self.state)
+	const deviceField = deviceOption(self.state)
 
 	self.setFeedbackDefinitions({
 		connected: {
@@ -146,7 +177,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			type: 'boolean',
 			defaultStyle: { bgcolor: BLUE, color: WHITE },
 			options: [
-				{ id: 'folder', type: 'dropdown', label: 'Folder', choices: folders, default: firstFolder },
+				folderField,
 				{ id: 'state', type: 'dropdown', label: 'State', choices: stateChoices, default: 'syncing' },
 			],
 			callback: (feedback) => findFolder(self.state, feedback.options.folder)?.state === feedback.options.state,
@@ -156,7 +187,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			name: 'Folder is fully in sync',
 			type: 'boolean',
 			defaultStyle: { bgcolor: GREEN, color: WHITE },
-			options: [{ id: 'folder', type: 'dropdown', label: 'Folder', choices: folders, default: firstFolder }],
+			options: [folderField],
 			callback: (feedback) => {
 				const folder = findFolder(self.state, feedback.options.folder)
 				return folder !== undefined && folder.needBytes === 0 && folder.needItems === 0
@@ -167,7 +198,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			name: 'Folder is paused',
 			type: 'boolean',
 			defaultStyle: { bgcolor: AMBER, color: WHITE },
-			options: [{ id: 'folder', type: 'dropdown', label: 'Folder', choices: folders, default: firstFolder }],
+			options: [folderField],
 			callback: (feedback) => findFolder(self.state, feedback.options.folder)?.paused === true,
 		},
 
@@ -176,7 +207,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			description: 'Active while files in the folder failed to sync',
 			type: 'boolean',
 			defaultStyle: { bgcolor: RED, color: WHITE },
-			options: [{ id: 'folder', type: 'dropdown', label: 'Folder', choices: folders, default: firstFolder }],
+			options: [folderField],
 			callback: (feedback) => (findFolder(self.state, feedback.options.folder)?.pullErrors ?? 0) > 0,
 		},
 
@@ -184,7 +215,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			name: 'Device is connected',
 			type: 'boolean',
 			defaultStyle: { bgcolor: GREEN, color: WHITE },
-			options: [{ id: 'device', type: 'dropdown', label: 'Device', choices: devices, default: firstDevice }],
+			options: [deviceField],
 			callback: (feedback) => findDevice(self.state, feedback.options.device)?.connected === true,
 		},
 
@@ -192,7 +223,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			name: 'Device is paused',
 			type: 'boolean',
 			defaultStyle: { bgcolor: AMBER, color: WHITE },
-			options: [{ id: 'device', type: 'dropdown', label: 'Device', choices: devices, default: firstDevice }],
+			options: [deviceField],
 			callback: (feedback) => findDevice(self.state, feedback.options.device)?.paused === true,
 		},
 
@@ -201,7 +232,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			description: 'Active while the other device holds everything that is shared with it',
 			type: 'boolean',
 			defaultStyle: { bgcolor: GREEN, color: WHITE },
-			options: [{ id: 'device', type: 'dropdown', label: 'Device', choices: devices, default: firstDevice }],
+			options: [deviceField],
 			callback: (feedback) => (findDevice(self.state, feedback.options.device)?.completion ?? 0) >= 100,
 		},
 	})

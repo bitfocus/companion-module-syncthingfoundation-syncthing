@@ -8,6 +8,29 @@ All notable changes to this module are recorded here. The format follows
 
 Nothing yet.
 
+## [1.0.1] - 2026-10-11
+
+### Changed
+
+- The folder and device fields in feedbacks now accept a typed-in id or an expression, as the ones
+  in actions always did. A feedback could otherwise not follow a folder chosen by an expression, or
+  one the module had not seen yet.
+- The pause, resume and toggle fields no longer offer an expression mode, which made no sense for a
+  fixed choice.
+
+### Removed
+
+- The per-folder variable `errors`. It held exactly the same value as `pull_errors`, and its name
+  could collide with another folder's: a folder `x` and a folder `x_pull` both produced
+  `folder_x_pull_errors`, so one could show the other's count. Use `pull_errors` instead.
+
+### Fixed
+
+- The lint configuration and the module checks workflow follow the module template again, as the
+  Bitfocus review requires.
+- The upgrade script type includes the module's secrets, so a future upgrade that touches the API
+  key is type-checked.
+
 ## [1.0.0] - 2026-10-02
 
 First release.

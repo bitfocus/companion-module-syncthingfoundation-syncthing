@@ -192,6 +192,9 @@ Pause, resume and toggle share one action with a mode dropdown, so a single butt
 folder or device. Toggling needs the current state, so it is skipped with a log entry if the
 module has not seen that folder or device yet.
 
+In actions and feedbacks alike, the folder and device fields list what the instance is configured
+with, and also accept a folder id or device ID typed in by hand or produced by an expression.
+
 Override and revert are destructive in opposite directions. Override discards what other devices
 changed, revert discards what you changed locally. Syncthing silently ignores both on folder types
 they do not apply to, so the module checks the type first and writes a log entry instead.
@@ -240,7 +243,7 @@ Errors: `error_count`, `last_error`, `restart_required`
 
 Per folder, as `folder_<folder>_<name>`, where `<folder>` is either the folder id or the
 lower-cased label: `id`, `label`, `type`, `state`, `paused`, `completion`, `in_sync`, `need_bytes`,
-`need_items`, `global_bytes`, `local_bytes`, `errors`, `pull_errors`, `local_changes`.
+`need_items`, `global_bytes`, `local_bytes`, `pull_errors`, `local_changes`.
 
 Per device, as `device_<device>_<name>`, where `<device>` is either the first block of the device
 ID or the lower-cased device name: `id`, `id_short`, `name`, `connected`, `paused`, `completion`,

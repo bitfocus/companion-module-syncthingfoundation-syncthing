@@ -1,6 +1,6 @@
 import type { DropdownChoice } from '@companion-module/base'
 import type ModuleInstance from './main.js'
-import { deviceChoices, folderChoices } from './feedbacks.js'
+import { deviceOption, folderOption } from './feedbacks.js'
 import { findDevice, findFolder } from './state.js'
 
 /** Actions that take no options at all. */
@@ -9,31 +9,39 @@ type NoOptions = Record<string, never>
 /** How a pause action should act on the current state. */
 export type PauseMode = 'pause' | 'resume' | 'toggle'
 
+/** Pausing every device at once has no single state to toggle from. */
+export type PauseAllMode = Exclude<PauseMode, 'toggle'>
+
 export type ActionsSchema = {
 	rescan_all: { options: NoOptions }
 	rescan_folder: { options: { folder: string } }
-	folder_pause: { options: { folder: string; mode: string } }
+	folder_pause: { options: { folder: string; mode: PauseMode } }
 	folder_override: { options: { folder: string } }
 	folder_revert: { options: { folder: string } }
-	device_pause: { options: { device: string; mode: string } }
-	devices_pause_all: { options: { mode: string } }
+	device_pause: { options: { device: string; mode: PauseMode } }
+	devices_pause_all: { options: { mode: PauseAllMode } }
 	restart: { options: NoOptions }
 	shutdown: { options: NoOptions }
 	clear_errors: { options: NoOptions }
 	refresh: { options: NoOptions }
 }
 
-const PAUSE_MODES: DropdownChoice[] = [
+const PAUSE_MODES: DropdownChoice<PauseMode>[] = [
 	{ id: 'pause', label: 'Pause' },
 	{ id: 'resume', label: 'Resume' },
 	{ id: 'toggle', label: 'Toggle' },
+]
+
+const PAUSE_ALL_MODES: DropdownChoice<PauseAllMode>[] = [
+	{ id: 'pause', label: 'Pause' },
+	{ id: 'resume', label: 'Resume' },
 ]
 
 /**
  * Works out whether the target should end up paused.
  * Returns undefined when a toggle was asked for but the current state is unknown.
  */
-export function resolvePause(mode: string, currentlyPaused: boolean | undefined): boolean | undefined {
+export function resolvePause(mode: PauseMode, currentlyPaused: boolean | undefined): boolean | undefined {
 	if (mode === 'pause') return true
 	if (mode === 'resume') return false
 	if (currentlyPaused === undefined) return undefined
@@ -41,30 +49,9 @@ export function resolvePause(mode: string, currentlyPaused: boolean | undefined)
 }
 
 export function UpdateActions(self: ModuleInstance): void {
-	const folders = folderChoices(self.state)
-	const devices = deviceChoices(self.state)
-	const firstFolder = String(folders[0]?.id ?? '')
-	const firstDevice = String(devices[0]?.id ?? '')
-
-	const folderOption = {
-		id: 'folder' as const,
-		type: 'dropdown' as const,
-		label: 'Folder',
-		choices: folders,
-		default: firstFolder,
-		allowCustom: true,
-		tooltip: 'The list follows the folders configured in Syncthing',
-	}
-
-	const deviceOption = {
-		id: 'device' as const,
-		type: 'dropdown' as const,
-		label: 'Device',
-		choices: devices,
-		default: firstDevice,
-		allowCustom: true,
-		tooltip: 'The list follows the devices configured in Syncthing',
-	}
+	// The same field definitions as the feedbacks, so a folder or device is chosen the same way.
+	const folderField = folderOption(self.state)
+	const deviceField = deviceOption(self.state)
 
 	self.setActionDefinitions({
 		rescan_all: {
@@ -82,7 +69,7 @@ export function UpdateActions(self: ModuleInstance): void {
 		rescan_folder: {
 			name: 'Rescan one folder',
 			description: 'Asks Syncthing to look for local changes in a single folder',
-			options: [folderOption],
+			options: [folderField],
 			callback: async (action) => {
 				const folder = action.options.folder
 				if (!folder) {
@@ -100,8 +87,16 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Folder: pause, resume or toggle',
 			description: 'A paused folder is neither scanned nor synchronised until it is resumed',
 			options: [
-				folderOption,
-				{ id: 'mode', type: 'dropdown', label: 'Action', choices: PAUSE_MODES, default: 'toggle' },
+				folderField,
+				{
+					id: 'mode',
+					type: 'dropdown',
+					label: 'Action',
+					choices: PAUSE_MODES,
+					default: 'toggle',
+					// A fixed choice, which an expression would only make harder to get right.
+					disableAutoExpression: true,
+				},
 			],
 			callback: async (action) => {
 				const folderId = action.options.folder
@@ -131,7 +126,7 @@ export function UpdateActions(self: ModuleInstance): void {
 			description:
 				'Makes the local version the latest one, discarding changes other devices made. ' +
 				'Only has an effect on send-only folders.',
-			options: [folderOption],
+			options: [folderField],
 			callback: async (action) => {
 				const folderId = action.options.folder
 				if (!folderId) {
@@ -161,7 +156,7 @@ export function UpdateActions(self: ModuleInstance): void {
 			description:
 				'Undoes changes made locally, taking the cluster version back. ' +
 				'Only has an effect on receive-only folders.',
-			options: [folderOption],
+			options: [folderField],
 			callback: async (action) => {
 				const folderId = action.options.folder
 				if (!folderId) {
@@ -190,8 +185,16 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Device: pause, resume or toggle',
 			description: 'A paused device is not connected to until it is resumed',
 			options: [
-				deviceOption,
-				{ id: 'mode', type: 'dropdown', label: 'Action', choices: PAUSE_MODES, default: 'toggle' },
+				deviceField,
+				{
+					id: 'mode',
+					type: 'dropdown',
+					label: 'Action',
+					choices: PAUSE_MODES,
+					default: 'toggle',
+					// A fixed choice, which an expression would only make harder to get right.
+					disableAutoExpression: true,
+				},
 			],
 			callback: async (action) => {
 				const deviceId = action.options.device
@@ -223,8 +226,9 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'mode',
 					type: 'dropdown',
 					label: 'Action',
-					choices: PAUSE_MODES.filter((choice) => choice.id !== 'toggle'),
+					choices: PAUSE_ALL_MODES,
 					default: 'pause',
+					disableAutoExpression: true,
 				},
 			],
 			callback: async (action) => {

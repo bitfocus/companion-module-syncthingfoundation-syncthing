@@ -7,21 +7,12 @@ jobs:
   check:
     name: Check module
 
-    # The Bitfocus check cannot run on a private repository. Its own job declares only
-    # packages: read, and a called workflow can only narrow the caller's permissions, never widen
-    # them, so its token never gets contents: read and cloning the repository fails. Every
-    # published module is public, which is why the check does not cater for this.
-    #
-    # It is therefore skipped while this repository is private, and runs again by itself as soon
-    # as the repository is made public, which it has to be before submission anyway.
-    if: ${{ !contains(github.repository, 'companion-module-template-') && !github.event.repository.private }}
+    if: ${{ !contains(github.repository, 'companion-module-template-') }}
 
-    # contents: read has no effect today, for the reason above, but the called job can only use
-    # what is granted here, so it has to be present if Bitfocus ever lets its job read contents.
     permissions:
-      contents: read
       packages: read
 
     uses: bitfocus/actions/.github/workflows/module-checks.yaml@main
     # with:
     #   upload-artifact: true # uncomment this to upload the built package as an artifact to this workflow that you can download and share with others
+

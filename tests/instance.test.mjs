@@ -33,6 +33,8 @@ function makeContext() {
 		savedSecrets: undefined,
 		saveCount: 0,
 		presets: {},
+		actions: {},
+		feedbacks: {},
 	}
 
 	const context = {
@@ -48,10 +50,14 @@ function makeContext() {
 		updateStatus: (status, message) => record.statuses.push({ status, message }),
 		oscSend: () => {},
 		recordAction: () => {},
-		setActionDefinitions: () => {},
+		setActionDefinitions: (actions) => {
+			record.actions = actions
+		},
 		subscribeActions: () => {},
 		unsubscribeActions: () => {},
-		setFeedbackDefinitions: () => {},
+		setFeedbackDefinitions: (feedbacks) => {
+			record.feedbacks = feedbacks
+		},
 		unsubscribeFeedbacks: () => {},
 		checkFeedbacks: () => {},
 		checkAllFeedbacks: () => {},
@@ -359,7 +365,52 @@ console.log('6. presets address variables through the connection label')
 	syncthing.server.close()
 }
 
-console.log('7. an unreachable instance reports a connection failure')
+console.log('7. actions and feedbacks offer the same folder and device fields')
+{
+	const syncthing = await startSyncthing({ requireKey: true })
+	const { context, record } = makeContext()
+	const instance = new ModuleInstance(context)
+
+	await instance.init(baseConfig(syncthing.port), true, { apiKey: 'the-real-key' })
+	await waitFor(() => Object.keys(record.feedbacks).length > 0 && Object.keys(record.actions).length > 0, 'definitions')
+
+	const fields = (definitions, id) =>
+		Object.entries(definitions).flatMap(([name, def]) =>
+			(def?.options ?? []).filter((o) => o.id === id).map((o) => ({ name, option: o })),
+		)
+	const names = (list) => list.map((f) => f.name).join(', ')
+
+	for (const id of ['folder', 'device']) {
+		const inFeedbacks = fields(record.feedbacks, id)
+		const inActions = fields(record.actions, id)
+		check(`feedbacks have ${id} fields`, inFeedbacks.length > 0, String(inFeedbacks.length))
+		check(
+			`every ${id} field in a feedback accepts a typed-in value`,
+			inFeedbacks.every((f) => f.option.allowCustom === true),
+			names(inFeedbacks.filter((f) => !f.option.allowCustom)),
+		)
+		check(
+			`every ${id} field in an action accepts a typed-in value`,
+			inActions.every((f) => f.option.allowCustom === true),
+			names(inActions.filter((f) => !f.option.allowCustom)),
+		)
+	}
+
+	const modes = fields(record.actions, 'mode')
+	check('there are three mode fields', modes.length === 3, names(modes))
+	check(
+		'none of them offers an expression',
+		modes.every((m) => m.option.disableAutoExpression === true),
+		names(modes.filter((m) => !m.option.disableAutoExpression)),
+	)
+	const pauseAll = modes.find((m) => m.name === 'devices_pause_all')
+	check('pausing all devices offers no toggle', !pauseAll?.option.choices.some((c) => c.id === 'toggle'))
+
+	await instance.destroy()
+	syncthing.server.close()
+}
+
+console.log('8. an unreachable instance reports a connection failure')
 {
 	const { context, record } = makeContext()
 	const instance = new ModuleInstance(context)

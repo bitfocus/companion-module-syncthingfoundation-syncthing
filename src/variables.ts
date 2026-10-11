@@ -125,7 +125,14 @@ export function deviceNameVar(device: DeviceInfo, suffix: string): string | unde
 	return device.namePrefix ? `device_${device.namePrefix}_${suffix}` : undefined
 }
 
-const FOLDER_SUFFIXES: { suffix: string; name: string }[] = [
+/**
+ * The properties published for every folder.
+ *
+ * No suffix may equal the part of another suffix after one of its underscores. Otherwise a folder
+ * `x` and a folder `x_pull` would both write `folder_x_pull_errors`, one from "pull_errors" and
+ * the other from "errors". A test enforces this.
+ */
+export const FOLDER_SUFFIXES: { suffix: string; name: string }[] = [
 	{ suffix: 'id', name: 'id' },
 	{ suffix: 'label', name: 'label' },
 	{ suffix: 'type', name: 'type' },
@@ -137,12 +144,12 @@ const FOLDER_SUFFIXES: { suffix: string; name: string }[] = [
 	{ suffix: 'need_items', name: 'items still needed' },
 	{ suffix: 'global_bytes', name: 'bytes in the cluster' },
 	{ suffix: 'local_bytes', name: 'bytes present locally' },
-	{ suffix: 'errors', name: 'error count' },
 	{ suffix: 'pull_errors', name: 'files that failed to sync' },
 	{ suffix: 'local_changes', name: 'local changes in a receive-only folder' },
 ]
 
-const DEVICE_SUFFIXES: { suffix: string; name: string }[] = [
+/** The properties published for every device, under the same rule as the folder ones. */
+export const DEVICE_SUFFIXES: { suffix: string; name: string }[] = [
 	{ suffix: 'id', name: 'device ID' },
 	{ suffix: 'id_short', name: 'device ID (short)' },
 	{ suffix: 'name', name: 'name' },
@@ -212,7 +219,6 @@ export function folderVariableValues(folder: FolderInfo): CompanionVariableValue
 			need_items: folder.needItems,
 			global_bytes: folder.globalBytes,
 			local_bytes: folder.localBytes,
-			errors: folder.pullErrors,
 			pull_errors: folder.pullErrors,
 			local_changes: folder.receiveOnlyChangedFiles,
 		},
